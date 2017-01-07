@@ -7,12 +7,12 @@ import scala.{Either => _, Left => _, Option => _, Right => _}
 sealed trait Either[+E, +A] {
   def map[B](f: A => B): Either[E, B] = this match {
     case Right(v) => Right(f(v))
-    case _ => _
+    case Left(e) => Left(e)
   }
 
   def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = this match {
     case Right(v) => f(v)
-    case _ => _
+    case Left(e) => Left(e)
   }
 
   def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = this match {
