@@ -6,6 +6,11 @@ trait Stream[+A] {
 
   import fpinscala.laziness.Stream._
 
+  def uncons: Option[(A, Stream[A])] = this match {
+    case Empty => None
+    case Cons(h, t) => Some(h(), t())
+  }
+
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
     this match {
       case Cons(h, t) => f(h(), t().foldRight(z)(f)) // If `f` doesn't evaluate its second argument, the recursion never occurs.
@@ -40,6 +45,8 @@ trait Stream[+A] {
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
   def map[B](f: A => B): Stream[B] = foldRight(empty[B])((a, s) => cons(f(a), s))
+
+  def map2[B, C](s: Stream[B])(f: (A, B) => C): Stream[C] = this.flatMap(i => s.map(j => f(i, j)))
 
   def filter(f: A => Boolean): Stream[A] = foldRight(empty[A])((a, s) => if (f(a)) cons(a, s) else s)
 
@@ -109,6 +116,7 @@ case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
 object Stream {
+
   def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {
     lazy val head = hd
     lazy val tail = tl
