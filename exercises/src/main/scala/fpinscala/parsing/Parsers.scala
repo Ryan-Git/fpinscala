@@ -96,12 +96,12 @@ trait Parsers[Parser[+ _]] {
     import Prop._
 
     def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop =
-      forAll(in)(s => run(p1)(s) == run(p2)(s))
+      forAll(in)(s => Parsers.this.run(p1)(s) == Parsers.this.run(p2)(s))
 
     def mapLaw[A](p: Parser[A])(in: Gen[String]): Prop =
       equal(p, p.map(a => a))(in)
 
-    def succeedLaw[A](a: A)(in: Gen[String]): Prop = forAll(in)(s => run(succeed(a))(s) == Right(a))
+    def succeedLaw[A](a: A)(in: Gen[String]): Prop = forAll(in)(s => Parsers.this.run(succeed(a))(s) == Right(a))
   }
 
 }
