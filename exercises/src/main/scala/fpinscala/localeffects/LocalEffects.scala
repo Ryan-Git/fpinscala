@@ -1,7 +1,5 @@
 package fpinscala.localeffects
 
-import fpinscala.monads._
-
 object Mutable {
   def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else {
     val arr = xs.toArray
@@ -98,7 +96,13 @@ sealed abstract class STArray[S,A](implicit manifest: Manifest[A]) {
   // Turn the array into an immutable list
   def freeze: ST[S,List[A]] = ST(value.toList)
 
-  def fill(xs: Map[Int,A]): ST[S,Unit] = ???
+  def fill(xs: Map[Int,A]): ST[S,Unit] = xs.headOption match {
+    case Some((i, a)) => {
+      write(i, a)
+      fill(xs.tail)
+    }
+    case None => ST()
+  }
 
   def swap(i: Int, j: Int): ST[S,Unit] = for {
     x <- read(i)
@@ -126,7 +130,11 @@ object Immutable {
 
   def partition[S](a: STArray[S,Int], l: Int, r: Int, pivot: Int): ST[S,Int] = ???
 
-  def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] = ???
+  def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] = for {
+    pi <- partition(a, l, r, l + (r - l) / 2)
+    _ <- qs(a, l, pi - 1)
+    _ <- qs(a, pi + 1, r)
+  } yield ()
 
   def quicksort(xs: List[Int]): List[Int] =
     if (xs.isEmpty) xs else ST.runST(new RunnableST[List[Int]] {
@@ -139,5 +147,37 @@ object Immutable {
   })
 }
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
+sealed abstract class STMap[S, K, V] {
+  protected def value: mutable.HashMap[K, V]
+
+  def size: ST[S,Int] = ST(value.size)
+
+  // Write a value at the give index of the array
+  def set(k: K, v: V): ST[S,Unit] = new ST[S,Unit] {
+    def run(s: S) = {
+      value += (k -> v)
+      ((), s)
+    }
+  }
+
+  // Read the value at the given index of the array
+  def get(k: K): ST[S,V] = ST(value(k))
+
+  // Turn the array into an immutable list
+  def freeze: ST[S,Map[K, V]] = ST(value.toMap)
+}
+
+object STMap {
+  // Construct an array of the given size filled with the value v
+  def apply[S,K,V](elems: (K, V)*): ST[S, STMap[S,K,V]] =
+    ST(new STMap[S,K,V] {
+      lazy val value = mutable.HashMap(elems:_*)
+    })
+
+  def fromMap[S,K,V](m: mutable.HashMap[K,V]): ST[S, STMap[S,K,V]] =
+    ST(new STMap[S,K,V] {
+      lazy val value = m
+    })
+}

@@ -39,17 +39,17 @@ object Exercise {
 
   }
 
-  trait Console[A]
+  trait Console[+A]
 
   case object ReadLine extends Console[Option[String]]
 
   case class PrintLine(s: String) extends Console[Unit]
 
-  def console(lines: List[String]): Run[Console] = new Run[Console] {
-    override def apply[A](c: Console[A]): (A, Run[Console]) = (c, lines) match {
-      case (ReadLine, head :: tail) => (Some(head), console(tail))
-      case _ => (None, console(Nil))
-    }
-  }
+//  def console(lines: List[String]): Run[Console] = new Run[Console[Option[String]]] {
+//    override def apply[Option](c: Console[Option]): (Option, Run[Console]) = (c, lines) match {
+//      case (ReadLine, head :: tail) => (Some(head), console(tail))
+//      case _ => (None, Run())
+//    }
+//  }
 }
 
